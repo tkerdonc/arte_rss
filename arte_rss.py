@@ -13,6 +13,11 @@ import pycurl
 
 BASE_URL = "https://www.arte.tv/fr/guide"
 
+def extractEntry(xml, xType, classKey):
+    for u in xml.findAll(xType):
+        if len(u['class']) == 2 and u['class'][1] is not None and u['class'][1] == classKey:
+            return u.text.encode('utf-8')
+
 class ArteDay:
     """ Object representing the content of an ARTE program for a day"""
     def __init__(self, date):
@@ -37,8 +42,11 @@ class ArteDay:
         xml = BeautifulSoup(body, 'lxml')
 
         self.videos = []
-        for vid_xml in xml.findAll("article", {"class":"tvguide-program"}):
-            self.videos.append(Video(vid_xml, date))
+        for timeline_xml in xml.findAll("div", {"class":"program-timeline"}):
+            for vid_xml in timeline_xml.findAll("div"):
+                v = Video(vid_xml, date)
+                if v.link is not None:
+                    self.videos.append(v)
 
 
     def to_rss(self):
@@ -73,15 +81,17 @@ class Video:
 
     def extract_link(self, xml):
         """ Parses the xml and returns the object's url"""
-        return xml.find('a', {"class":"tvguide-program__link"})['href']
+        for u in xml.findAll('a'):
+            if u['href'] is not None:
+                return u['href']
 
     def extract_description(self, xml):
         """ Parses the xml and returns the object's description"""
-        return xml.find('div', {"class":"tvguide-program__description"}).text.encode('utf-8')
+        return extractEntry(xml, "div", "e1p6xx0h3")
 
     def extract_title(self, xml):
         """ Parses the xml and returns the object's title"""
-        return xml.find('h3', {"class":"tvguide-program__title"}).text.encode('utf-8')
+        return extractEntry(xml, "span", "e1p6xx0h12")
 
     def extract_timestamp(self, day, xml):
         """
@@ -90,18 +100,23 @@ class Video:
             for this reason, we combine them with the date information from the URL
             and end up with a fill timestamp
         """
-        time_of_day_str = xml.find('span', {"class":"tvguide-program__hour"}).text
-        hour_str, minute_str = time_of_day_str.split(':')
+        time_of_day_str = extractEntry(xml, "span", "e1p6xx0h7")
 
-        date = datetime(
-            year=day.year,
-            month=day.month,
-            day=day.day,
-            hour=int(hour_str),
-            minute=int(minute_str)
-        )
+        if time_of_day_str is not None:
+            hour_str, minute_str = time_of_day_str.split(':')
 
-        return date.strftime('%s')
+            date = datetime(
+                year=day.year,
+                month=day.month,
+                day=day.day,
+                hour=int(hour_str),
+                minute=int(minute_str)
+            )
+
+            return date.strftime('%s')
+        return None
+
+
 
     def to_rss(self):
         """ Converts the object to RSS """
@@ -132,4 +147,4 @@ class Video:
 
 TODAY = ArteDay(datetime.today())
 sys.stdout.write("<?xml version='1.0' encoding='UTF-8'?>")
-sys.stdout.write(str(etree.tostring(TODAY.to_rss(), encoding="unicode")))
+sys.stdout.write(str(etree.tostring(TODAY.to_rss())))
