@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-    Due to disapperead RSS support, this tool parses the content of the ARTE+7
+    Due to disappeard RSS support, this tool parses the content of the ARTE+7
     streaming website and converts it to RSS.
 """
 import sys
@@ -98,7 +98,7 @@ class Video:
             Parses the xml and returns the object's date of broadcast
             Unfotunately, only the hours and minutes are available in the xml,
             for this reason, we combine them with the date information from the URL
-            and end up with a fill timestamp
+            and end up with a full timestamp
         """
         time_of_day_str = extractEntry(xml, "span", "e1p6xx0h7")
 
@@ -113,7 +113,7 @@ class Video:
                 minute=int(minute_str)
             )
 
-            return date.strftime('%s')
+            return date.strftime('%a, %d %B %Y %H:%M:%S %z')
         return None
 
 
@@ -134,9 +134,10 @@ class Video:
         title.text = self.title.decode('utf-8')
         root.append(title)
 
-        description = etree.Element('description')
-        description.text = self.description.decode('utf-8')
-        root.append(description)
+        if self.description is not None:
+            description = etree.Element('description')
+            description.text = self.description.decode('utf-8')
+            root.append(description)
 
         author = etree.Element('author')
         author.text = self.author_name
