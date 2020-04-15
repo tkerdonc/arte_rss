@@ -13,7 +13,7 @@ import pycurl
 
 BASE_URL = "https://www.arte.tv/fr/guide"
 
-def extractEntry(xml, xType, classKey):
+def extract_entry(xml, xType, classKey):
     for u in xml.findAll(xType):
         if len(u['class']) == 2 and u['class'][1] is not None and u['class'][1] == classKey:
             return u.text.encode('utf-8')
@@ -87,11 +87,11 @@ class Video:
 
     def extract_description(self, xml):
         """ Parses the xml and returns the object's description"""
-        return extractEntry(xml, "div", "e1p6xx0h3")
+        return extract_entry(xml, "div", "e1p6xx0h3")
 
     def extract_title(self, xml):
         """ Parses the xml and returns the object's title"""
-        return extractEntry(xml, "span", "e1p6xx0h12")
+        return extract_entry(xml, "span", "e1p6xx0h12")
 
     def extract_timestamp(self, day, xml):
         """
@@ -100,10 +100,10 @@ class Video:
             for this reason, we combine them with the date information from the URL
             and end up with a full timestamp
         """
-        time_of_day_str = extractEntry(xml, "span", "e1p6xx0h7")
+        time_of_day_str = extract_entry(xml, "span", "e1p6xx0h7")
 
         if time_of_day_str is not None:
-            hour_str, minute_str = time_of_day_str.split(':')
+            hour_str, minute_str = time_of_day_str.decode().split(':')
 
             date = datetime(
                 year=day.year,
@@ -148,4 +148,4 @@ class Video:
 
 TODAY = ArteDay(datetime.today())
 sys.stdout.write("<?xml version='1.0' encoding='UTF-8'?>")
-sys.stdout.write(str(etree.tostring(TODAY.to_rss())))
+sys.stdout.write(etree.tostring(TODAY.to_rss()).decode())
